@@ -120,11 +120,6 @@ system.time(pi_gpq_m3 <- pi_c1_gpq_m3(histdat=dat_hb))
 
 # Interval on log scale
 pi_gpq_m3
-#          L          U      D_est 
-# -0.2181392  0.3770413  0.2975902 
 
 # interval on response scale
 exp(pi_gpq_m3)
-
-#         L         U     D_est 
-# 0.8040135 1.4579645 1.3466099 
