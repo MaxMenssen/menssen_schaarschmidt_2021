@@ -22,14 +22,12 @@ mouse_id <- factor(c(1:20, 1:20, 1:20))
 
 dat_hb <- data.frame(run=run,
                      mouse_id=mouse_id,
-                     nmru=c(run_1, run_2, run_3))
+                     log_nmru=log(c(run_1, run_2, run_3)))
 
 #-------------------------------------------------------------------------------
 
-pi_c1_gpq <- function(histdat,
-                      n_i_fut, n_j_fut, n_ij_fut,
-                      # GPQ_n=1e+04,
-                      GPQ_n=10,
+pi_c1_gpq_m3 <- function(histdat,
+                      GPQ_n=1e+04,
                       alpha=0.05){
   
   
@@ -42,47 +40,27 @@ pi_c1_gpq <- function(histdat,
   # J
   J <- length(levels(droplevels(histdat[,2])))
   
-  # print(c(I, J))
- 
-  
   #-----------------------------------------------------------------------------
-  # modelfit
   
+  # modelfit
   c1_aov <- aov(histdat[,3] ~ histdat[,1] + histdat[,2], data=histdat)
   
-  # print(summary(c1_aov))
   #-----------------------------------------------------------------------------
   
   # degrees of freedom
   df <- summary(c1_aov)[[1]][["Df"]]
   names(df) <- c("a", "b", "res")
   
-  # print(df)
-  
   #-----------------------------------------------------------------------------
   # sum of sqares
   ssq <- summary(c1_aov)[[1]][["Sum Sq"]]
   names(ssq) <- c("a", "b", "res")
-  
-  # print(ssq)
-  
-  #-----------------------------------------------------------------------------
-  
-  # I_i <- diag(n_i_fut)
-  # J_i <- matrix(1,n_i_fut,n_i_fut)
-  # 
-  # I_j <- diag(n_j_fut)
-  # J_j <- matrix(1,n_j_fut,n_j_fut)
-  # 
-  # I_k <- diag(n_ij_fut)
-  # J_k <- matrix(1,n_ij_fut,n_ij_fut)
   
   #-------------------------------------------------------------------------------
   
   # GPQ´s for Psi_Squares (step 3)
   R_Psi_a <- ssq["a"] / rchisq(n=GPQ_n, df=df["a"])
   R_Psi_b <- ssq["b"] / rchisq(n=GPQ_n, df=df["b"])
-  # R_Psi_ab <- ssq["a:b"] / rchisq(n=GPQ_n, df=df["a:b"])
   R_Psi_e <- ssq["res"] / rchisq(n=GPQ_n, df=df["res"])
   
   #-----------------------------------------------------------------------------
@@ -99,31 +77,8 @@ pi_c1_gpq <- function(histdat,
   R_sig2_a <- as.list(replace(R_sig2_a_v, R_sig2_a_v<0, 0))
   R_sig2_b <- as.list(replace(R_sig2_b_v, R_sig2_b_v<0, 0))
   R_sig2_e <- as.list(replace(R_sig2_e_v, R_sig2_e_v<0, 0))
-
-  # print(R_sig2_a)
-  # print(R_sig2_b)
-  # print(R_sig2_e)
   
-  R_sig2_y <- (Map("+", Map("+", R_sig2_a, R_sig2_b), R_sig2_e))
-  
-  # print("R_sig2_y")
-  # print(R_sig2_y)
-  #-----------------------------------------------------------------------------
-  
-  # # GPQ for var(y) (step 5a)
-  # f_a <- function(X){X*(I_i %x% J_j %x% J_k)}
-  # f_b <- function(X){X*(J_i %x% I_j %x% J_k)}
-  # f_ab <- function(X){X*(I_i %x% I_j %x% J_k)}
-  # f_e <- function(X){X*(I_i %x% I_j %x% I_k)}
-  # 
-  # vc_a <- lapply(X=R_sig2_a, FUN=f_a)
-  # vc_b <- lapply(X=R_sig2_b, FUN=f_b)
-  # vc_ab <- lapply(X=R_sig2_ab, FUN=f_ab)
-  # vc_e <- lapply(X=R_sig2_e, FUN=f_e)
-  # 
-  # sigma_star_1 <- Map("+",vc_a, vc_b)
-  # sigma_star_2 <- Map("+", sigma_star_1, vc_ab)
-  # sigma_star <- Map("+", sigma_star_2, vc_e)
+  GPQ_sig2_y <- (Map("+", Map("+", R_sig2_a, R_sig2_b), R_sig2_e))
   
   #-----------------------------------------------------------------------------
   
@@ -132,32 +87,13 @@ pi_c1_gpq <- function(histdat,
                             I*as.numeric(R_sig2_b) + 
                             as.numeric(R_sig2_e)))
   
-  # print("GPQ_sig2_mu")
-  # print(GPQ_sig2_mu)
-  
-  
-  
-  # J_mu <- matrix(1, (n_i_fut*n_j_fut*n_ij_fut), (n_i_fut*n_j_fut*n_ij_fut))
-  # 
-  # f_J_mu <- function(X){X*J_mu}
-  # 
-  # sig2_mu_J_mu <- lapply(GPQ_sig2_mu, f_J_mu)
-  
   #-----------------------------------------------------------------------------
   
   # GPQ for var(y_star) (step 5)
-  GPQ_sigma_k <- Map("+", R_sig2_y, GPQ_sig2_mu)
+  GPQ_sigma_k <- Map("+", GPQ_sig2_y, GPQ_sig2_mu)
   
-  print("GPQ_sigma_k")
-  print(GPQ_sigma_k)
-  
- # for m1 sample K Variances and apply them to qnorm, then take the median of D_est
+  # GPQ for the prediction variance
   GPQ_sigma <- mean(as.numeric(GPQ_sigma_k))
-  
-  print("GPQ_sigma")
-  print(GPQ_sigma)
-  
-  # GPQ_sigma_hat <- Reduce("+",GPQ_sigma)/GPQ_n
   
   # GPQ_D <- qmvnorm(p=1-alpha/2, mean=0, sigma=GPQ_sigma)
   D_est <- qnorm(p=1-alpha/2, mean=0, sd=sqrt(GPQ_sigma))
@@ -169,8 +105,7 @@ pi_c1_gpq <- function(histdat,
   y_mean <- mean(histdat[,3])
   L <- y_mean - D_est
   U <- y_mean + D_est
-  pi_c2 <- c("L"=L, "U"=U)
-  
+  pi_c2 <- c("L"=L, "U"=U, "pred_var"=GPQ_sigma, "D_est"=D_est)
   
   #----------------------------------------------------------------------------
   
@@ -178,14 +113,22 @@ pi_c1_gpq <- function(histdat,
   output <- pi_c2
   
   return(output)
-  
-  
 }
 
-system.time(pi_c1_gpq <- pi_c1_gpq(histdat=dat_hb,
-                                   n_i_fut=1, n_j_fut=1, n_ij_fut=1))
+#------------------------------------------------------------------------------
 
-pi_c1_gpq
+# Interval calculation
+system.time(pi_gpq_m3 <- pi_c1_gpq_m3(histdat=dat_hb))
+
+# Interval on log scale
+pi_gpq_m3
+#          L          U   pred_var      D_est 
+# -0.6839794  0.8428815  0.1517200  0.7634304 
+
+# interval on response scale
+exp(pi_gpq_m3)
+#       L        U pred_var    D_est 
+# 0.504605 2.323051 1.163834 2.145624
 
 
 
