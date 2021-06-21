@@ -119,11 +119,8 @@ franq_pi <- function(modelfit, type="both", alpha=0.05){
 
 #------------------------------------------------------------------------------
 
-# Modelfit using remlMM from VCA
-fit_hb <- remlMM(log_nmru~1 + (run) + (mouse_id), dat_hb)
-
-# Prediction interval
-system.time(franq_pi_hb <- franq_pi(modelfit=fit_hb))
+# Prediction interval using a model fit with remlMM from VCA
+system.time(franq_pi_hb <- franq_pi(modelfit=remlMM(log_nmru~1 + (run) + (mouse_id), dat_hb)))
 
 # interval on the log scale
 franq_pi_hb

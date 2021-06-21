@@ -130,11 +130,8 @@ remlPI <- function(modelfit, type="both", alpha=0.05, printdfc=TRUE){
 
 #------------------------------------------------------------------------------
 
-# Modelfit using remlMM from VCA
-fit_hb <- remlMM(log_nmru~1 + (run) + (mouse_id), dat_hb)
-
-# Prediction interval
-system.time(reml_pi_hb <- remlPI(modelfit=fit_hb))
+# Prediction interval using a model fit with remlMM from VCA
+system.time(reml_pi_hb <- remlPI(modelfit=remlMM(log_nmru~1 + (run) + (mouse_id), dat_hb)))
 
 # interval on the log scale
 reml_pi_hb

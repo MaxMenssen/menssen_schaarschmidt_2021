@@ -31,11 +31,8 @@ dat_hb <- data.frame(run=run,
 library(lme4)
 library(predint)
 
-# random effects model with lmer
-fit_hb_lmer <- lmer(log_nmru~1 + (1|run) + (1|mouse_id), data=dat_hb)
-
 # prediction interval for one future observations
-system.time(calib_pi <- lmer_pi(model=fit_hb_lmer, m=1))
+system.time(calib_pi <- lmer_pi(model=lmer(log_nmru~1 + (1|run) + (1|mouse_id), data=dat_hb), m=1))
 
 # Interval on log scale
 calib_pi
